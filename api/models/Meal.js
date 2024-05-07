@@ -23,6 +23,14 @@ const mealSchema = new mongoose.Schema({
     of: String,
     required: true,
   },
+  people: {
+    type: Number,
+    required: true,
+  },
+  cookTime: {
+    type: String,
+    required: true,
+  },
   createdAt: {
     type: Date,
     default: Date.now,

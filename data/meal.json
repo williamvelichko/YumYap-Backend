@@ -2,6 +2,8 @@
   "name": "Chicken Tikka Masala",
   "cuisine": "Indian",
   "image": "https://www.example.com/chicken_tikka_masala.jpg",
+  "people": 2,
+  "cookTime": "35 minutes",
   "ingredients": {
     "1": "500g boneless, skinless chicken thighs, cut into bite-sized pieces",
     "2": "1 cup plain yogurt",

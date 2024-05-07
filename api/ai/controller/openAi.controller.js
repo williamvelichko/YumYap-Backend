@@ -1,11 +1,10 @@
-const { GoogleGenerativeAI } = require("@google/generative-ai");
-const dotenv = require("dotenv").config();
+const fetch = require("node-fetch"); // Import the 'node-fetch' library
 
-const geminiAi = async (req, res) => {
+const openAi = async (req, res) => {
   try {
     const userText = req.body.text;
 
-    res.setHeader("Content-Type", "application/json"); // Set content type to JSON
+    res.setHeader("Content-Type", "application/json");
     res.setHeader("Cache-Control", "no-cache");
     res.setHeader("Connection", "keep-alive");
 
@@ -30,8 +29,8 @@ const geminiAi = async (req, res) => {
     const messages = [{ role: "system", content: prompt.join(" ") }];
     const message = messages[0].content;
 
-    const result = await fetchGeminiCompletionsStream(message);
-    res.send(result); // Send the JSON response
+    const result = await fetchOpenAICompletionsStream(message); // Call the function to fetch completions from OpenAI
+    res.send(result);
 
     req.on("close", () => {
       res.end();
@@ -42,25 +41,30 @@ const geminiAi = async (req, res) => {
   }
 };
 
-async function fetchGeminiCompletionsStream(messages) {
-  const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
-  const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
+async function fetchOpenAICompletionsStream(prompt) {
+  const OPENAI_API_KEY = process.env.OPENAI_API_KEY; // Get the OpenAI API key from environment variables
+  const response = await fetch("https://api.openai.com/v1/completions", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${OPENAI_API_KEY}`, // Set the authorization header with the API key
+    },
+    body: JSON.stringify({
+      model: "gpt-3.5-turbo", // Specify the OpenAI model
+      prompt: prompt,
+      max_tokens: 150, // Adjust as needed
+    }),
+  });
 
-  const aiModel = "gemini-pro";
-  const model = genAI.getGenerativeModel({ model: aiModel });
-
-  try {
-    const result = await model.generateContent(messages);
-    const response = await result.response;
-    const text = response.text();
-    const jsonStr = text.replace(/^```json\n|```$/g, ""); // Remove code block markers
-    return JSON.parse(jsonStr); // Parse the JSON string and return the object
-  } catch (error) {
-    console.error("Error fetching data from Gemini AI API:", error);
-    throw new Error("Error fetching data from Gemini AI API.");
+  if (!response.ok) {
+    throw new Error(`OpenAI API request failed with status ${response.status}`);
   }
+
+  const json = await response.json(); // Parse the JSON response
+  console.log(json);
+  return json.choices[0].text; // Extract the text from the response
 }
 
 module.exports = {
-  geminiAi,
+  openAi,
 };

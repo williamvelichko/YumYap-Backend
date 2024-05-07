@@ -5,12 +5,12 @@ const geminiAi = async (req, res) => {
   try {
     const userText = req.body.text;
 
-    res.setHeader("Content-Type", "text/event-stream");
+    res.setHeader("Content-Type", "application/json"); // Set content type to JSON
     res.setHeader("Cache-Control", "no-cache");
     res.setHeader("Connection", "keep-alive");
 
     const prompt = [];
-    prompt.push("Generate a recipe based of users preference:");
+    prompt.push("Generate a recipe based on user's preference:");
     prompt.push(`User: ${userText}`);
     prompt.push(
       "Please provide a detailed recipe, including steps for preparation and cooking. Only use the ingredients provided."
@@ -19,15 +19,19 @@ const geminiAi = async (req, res) => {
       "The recipe should highlight the fresh and vibrant flavors of the ingredients."
     );
     prompt.push(
-      "Also give the recipe a suitable name in its local language based on cuisine preference."
+      "Also, give the recipe a suitable name in its local language based on cuisine preference."
     );
-    prompt.push("Give a google image href aswell");
-    prompt.push("return everything in a array as a object");
+    prompt.push("Provide a Google image URL as well.");
+    prompt.push("Return everything in an array as an object.");
+    prompt.push(
+      'The object must be structured like this: { "name": "", "cuisine": "", "image": "", "ingredients": [], "steps": [] }'
+    );
+
     const messages = [{ role: "system", content: prompt.join(" ") }];
     const message = messages[0].content;
 
     const result = await fetchGeminiCompletionsStream(message);
-    res.json(result);
+    res.send(result); // Send the JSON response
 
     req.on("close", () => {
       res.end();
@@ -49,9 +53,8 @@ async function fetchGeminiCompletionsStream(messages) {
     const result = await model.generateContent(messages);
     const response = await result.response;
     const text = response.text();
-
-    const jsonStr = text.replace(/^```\n|```$/g, "");
-    return JSON.parse(jsonStr);
+    const jsonStr = text.replace(/^```json\n|```$/g, ""); // Remove code block markers
+    return JSON.parse(jsonStr); // Parse the JSON string and return the object
   } catch (error) {
     console.error("Error fetching data from Gemini AI API:", error);
     throw new Error("Error fetching data from Gemini AI API.");

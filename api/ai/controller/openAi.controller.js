@@ -1,97 +1,66 @@
-const cors = require("cors");
-const OpenAI = require("openai");
+const { GoogleGenerativeAI } = require("@google/generative-ai");
 const dotenv = require("dotenv").config();
 
-// SSE Endpoint
-const openAi = async (req, res) => {
-  const ingredients = req.body.ingredients;
-  const mealType = req.body.mealType;
-  const cuisine = req.body.cuisine;
-  const cookingTime = req.body.cookingTime;
-  const complexity = req.body.complexity;
+const geminiAi = async (req, res) => {
+  try {
+    const userText = req.body.text;
 
-  console.log(req.body);
+    res.setHeader("Content-Type", "application/json"); // Set content type to JSON
+    res.setHeader("Cache-Control", "no-cache");
+    res.setHeader("Connection", "keep-alive");
 
-  res.setHeader("Content-Type", "text/event-stream");
-  res.setHeader("Cache-Control", "no-cache");
-  res.setHeader("Connection", "keep-alive");
+    const prompt = [];
+    prompt.push("Generate a recipe based on user's preference:");
+    prompt.push(`User: ${userText}`);
+    prompt.push(
+      "Please provide a detailed recipe, including steps for preparation and cooking. Only use the ingredients provided."
+    );
+    prompt.push(
+      "The recipe should highlight the fresh and vibrant flavors of the ingredients."
+    );
+    prompt.push(
+      "Also, give the recipe a suitable name in its local language based on cuisine preference."
+    );
+    prompt.push("Provide a Google image URL as well.");
+    prompt.push("Return everything in an array as an object.");
+    prompt.push(
+      'The object must be structured like this: { "name": "", "cuisine": "", "image": "", "ingredients": [], "steps": [] }'
+    );
 
-  // Function to send messages
-  const sendEvent = (chunk) => {
-    let chunkResponse;
-    if (chunk.choices[0].finish_reason === "stop") {
-      res.write(`data: ${JSON.stringify({ action: "close" })}\n\n`);
-    } else {
-      if (
-        chunk.choices[0].delta.role &&
-        chunk.choices[0].delta.role === "assistant"
-      ) {
-        chunkResponse = {
-          action: "start",
-        };
-      } else {
-        chunkResponse = {
-          action: "chunk",
-          chunk: chunk.choices[0].delta.content,
-        };
-      }
-      res.write(`data: ${JSON.stringify(chunkResponse)}\n\n`);
-    }
-  };
+    const messages = [{ role: "system", content: prompt.join(" ") }];
+    const message = messages[0].content;
 
-  const prompt = [];
-  prompt.push("Generate a recipe that incorporates the following details:");
-  prompt.push(`[Ingredients: ${ingredients}]`);
-  prompt.push(`[Meal Type: ${mealType}]`);
-  prompt.push(`[Cuisine Preference: ${cuisine}]`);
-  prompt.push(`[Cooking Time: ${cookingTime}]`);
-  prompt.push(`[Complexity: ${complexity}]`);
-  prompt.push(
-    "Please provide a detailed recipe, including steps for preparation and cooking. Only use the ingredients provided."
-  );
-  prompt.push(
-    "The recipe should highlight the fresh and vibrant flavors of the ingredients."
-  );
-  prompt.push(
-    "Also give the recipe a suiable name in its local languagebased on cuisine preference."
-  );
+    const result = await fetchGeminiCompletionsStream(message);
+    res.send(result); // Send the JSON response
 
-  const messages = [
-    {
-      role: "system",
-      content: prompt.join(" "),
-    },
-  ];
-  fetchOpenAICompletionsStream(messages, sendEvent);
-
-  // Clear interval and close connection on client disconnect
-  req.on("close", () => {
-    res.end();
-  });
+    req.on("close", () => {
+      res.end();
+    });
+  } catch (error) {
+    console.error("Error in geminiAi:", error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
 };
 
-async function fetchOpenAICompletionsStream(messages, callback) {
-  const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
-  const openai = new OpenAI({ apiKey: OPENAI_API_KEY });
+async function fetchGeminiCompletionsStream(messages) {
+  const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+  const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
 
-  const aiModel = "gpt-3.5-turbo-1106";
+  const aiModel = "gemini-pro";
+  const model = genAI.getGenerativeModel({ model: aiModel });
+
   try {
-    const completion = await openai.chat.completions.create({
-      model: aiModel,
-      messages: messages,
-      temperature: 1,
-      stream: true,
-    });
-
-    for await (const chunk of completion) {
-      callback(chunk);
-    }
+    const result = await model.generateContent(messages);
+    const response = await result.response;
+    const text = response.text();
+    const jsonStr = text.replace(/^```json\n|```$/g, ""); // Remove code block markers
+    return JSON.parse(jsonStr); // Parse the JSON string and return the object
   } catch (error) {
-    console.error("Error fetching data from OpenAI API:", error);
-    throw new Error("Error fetching data from OpenAI API.");
+    console.error("Error fetching data from Gemini AI API:", error);
+    throw new Error("Error fetching data from Gemini AI API.");
   }
 }
 
 module.exports = {
-  openAi,
+  geminiAi,
 };

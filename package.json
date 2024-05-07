@@ -11,17 +11,21 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@google/generative-ai": "^0.10.0",
     "actions-on-google": "^3.0.0",
     "axios": "^1.6.8",
     "bcrypt": "^5.1.1",
     "body-parser": "^1.20.2",
+    "cors": "^2.8.5",
     "dialogflow": "^1.2.0",
     "dialogflow-fulfillment": "^0.6.1",
     "dotenv": "^16.4.5",
     "express": "^4.19.2",
+    "gemini-api": "^2.0.4",
     "jsonwebtoken": "^9.0.2",
     "mongodb": "^6.6.0",
-    "mongoose": "^8.3.3"
+    "mongoose": "^8.3.3",
+    "openai": "^4.42.0"
   },
   "devDependencies": {
     "nodemon": "^3.1.0"

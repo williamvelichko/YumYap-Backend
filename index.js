@@ -21,6 +21,10 @@ app.use("/auth", authRouter);
 app.use("/ai", aiRouter);
 app.use("/meal", mealRouter);
 
+app.get("/", (req, res) => {
+  res.send("Hello YumYap");
+});
+
 const PORT = process.env.PORT || 8000;
 
 app.listen(PORT, () => console.log(`Server is running on port ${PORT}`));

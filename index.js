@@ -6,6 +6,7 @@ const authRouter = require("./api/auth/route/auth.route");
 const aiRouter = require("./api/ai/route/ai.route");
 const mealRouter = require("./api/meals/route/meals.routes");
 const bodyParser = require("body-parser");
+const cors = require("cors");
 
 connectDB();
 
@@ -13,7 +14,7 @@ process.on("SIGINT", () => {
   closeDB();
   process.exit();
 });
-
+app.use(cors());
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 

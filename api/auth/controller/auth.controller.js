@@ -76,7 +76,34 @@ const loginUser = async (req, res) => {
   }
 };
 
+const resetPassword = async (req, res) => {
+  const { email, newPassword } = req.body;
+
+  try {
+    if (!email) {
+      return res.status(400).json({ msg: "Email is required" });
+    }
+
+    let user = await User.findOne({ email });
+
+    if (!user) {
+      return res.status(404).json({ msg: "User not found" });
+    }
+    const saltRounds = 10;
+    const salt = await bcrypt.genSalt(saltRounds);
+    const hashedPassword = await bcrypt.hash(newPassword, salt);
+
+    user.password = hashedPassword;
+    await user.save();
+    res.json({ msg: "Password reset successfully" });
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).send("Server Error");
+  }
+};
+
 module.exports = {
   registerUser,
   loginUser,
+  resetPassword,
 };

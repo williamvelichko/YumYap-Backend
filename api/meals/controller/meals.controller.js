@@ -24,6 +24,7 @@ const saveMeal = async (req, res) => {
 };
 const getAllSavedMeals = async (req, res) => {
   try {
+    console.log(req.userId);
     const userId = req.params.id;
     const savedMeals = await SavedMeal.find({ user: userId }).populate("meal");
 

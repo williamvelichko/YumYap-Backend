@@ -7,6 +7,7 @@ const aiRouter = require("./api/ai/route/ai.route");
 const mealRouter = require("./api/meals/route/meals.routes");
 const bodyParser = require("body-parser");
 const cors = require("cors");
+const { protect } = require("./api/middleware/protectedRoute");
 
 connectDB();
 
@@ -20,7 +21,7 @@ app.use(bodyParser.urlencoded({ extended: true }));
 
 app.use("/auth", authRouter);
 app.use("/ai", aiRouter);
-app.use("/meal", mealRouter);
+app.use("/meal", protect, mealRouter);
 
 app.get("/", (req, res) => {
   res.send("Hello YumYap");

@@ -29,6 +29,7 @@ const registerUser = async (req, res) => {
       user: {
         email: user.email,
         id: user.id,
+        verified: user.verified,
       },
     };
 

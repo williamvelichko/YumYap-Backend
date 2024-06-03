@@ -18,9 +18,11 @@ const openAi = async (req, res) => {
       "The recipe should highlight the fresh and vibrant flavors of the ingredients."
     );
     prompt.push(
+      "Add the meals nutrition facts for the entire meal for one person, an example would be calories, carbs, sugar and more"
+    );
+    prompt.push(
       "Also, give the recipe a suitable name in its local language based on cuisine preference."
     );
-    prompt.push("Provide a Google image URL as well.");
     prompt.push("Return everything in an array as an object.");
     prompt.push(
       `The object must be structured like a json and a example would be this: {
@@ -55,6 +57,14 @@ const openAi = async (req, res) => {
           "4": "Stir in the crushed tomatoes and season with salt and pepper. Simmer uncovered for 15-20 minutes, stirring occasionally, until the sauce thickens and the chicken is cooked through.",
           "5": "Stir in the heavy cream and cook for another 5 minutes until heated through. Taste and adjust seasoning if necessary.",
           "6": "Garnish with chopped fresh cilantro leaves and serve hot with rice or naan bread."
+        },
+        "nutritionFacts": {
+          "calories": "390 cal",
+          "carbs": "24g",
+          "sugar": "3g",
+          "protein": "19g",
+          "fat": "25g",
+          "fiber": "5g"
         }
       }
       `
@@ -64,7 +74,13 @@ const openAi = async (req, res) => {
     const message = messages[0].content;
 
     const result = await fetchOpenAICompletionsStream(prompt.join(" "));
-    res.send(result);
+
+    let recipe = JSON.parse(result);
+
+    // Generate image for the recipe name using OpenAI's DALL-E or similar model
+    const imageUrl = await generateImageForRecipe(recipe.name);
+    recipe.image = imageUrl;
+    res.send(recipe);
 
     req.on("close", () => {
       res.end();
@@ -92,8 +108,25 @@ async function fetchOpenAICompletionsStream(prompt) {
     ],
   });
   const responseText = completion.choices[0].message.content;
-  console.log(responseText);
   return responseText;
+}
+
+async function generateImageForRecipe(recipeName) {
+  const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
+  const openai = new OpenAI({
+    apiKey: OPENAI_API_KEY,
+  });
+
+  const imagePrompt = `Generate an image for the recipe: ${recipeName}`;
+
+  const imageResult = await openai.images.generate({
+    model: "dall-e-3",
+    prompt: imagePrompt,
+    n: 1,
+    size: "1024x1024",
+  });
+
+  return imageResult.data[0].url;
 }
 
 module.exports = {
